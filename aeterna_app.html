@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>AETERNA SYNAPSYS — ARIA</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--blue:#2D7FF9;--bg:#07090f;--bg2:#0d1117;--bg3:#121820;--text:#f0f2f5;--muted:#8b949e;--border:rgba(255,255,255,0.08);--green:#22c55e;--red:#e24b4a;--purple:#a78bfa}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;overflow:hidden}
+.screen{position:absolute;inset:0;display:none;flex-direction:column}
+.screen.active{display:flex}
+
+/* BOOT */
+#screen-boot{background:var(--bg);align-items:center;justify-content:center;text-align:center;padding:2rem;gap:0}
+.boot-logo{width:72px;height:72px;margin:0 auto 1.5rem}
+.boot-title{font-size:2rem;font-weight:700;letter-spacing:.08em}
+.boot-sub{font-size:.85rem;color:var(--blue);letter-spacing:.2em;margin-bottom:1.75rem}
+.boot-greeting{font-size:.95rem;color:var(--muted);line-height:1.8;max-width:320px;margin:0 auto 1.75rem}
+.form-wrap{display:flex;flex-direction:column;gap:.75rem;width:100%;max-width:320px}
+input,select{background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:13px 16px;border-radius:11px;font-size:.95rem;outline:none;font-family:inherit;width:100%}
+input:focus,select:focus{border-color:var(--blue)}
+.voice-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.vbtn{background:var(--bg2);border:1px solid var(--border);color:var(--muted);padding:11px;border-radius:11px;font-size:.82rem;cursor:pointer;font-family:inherit;transition:all .2s}
+.vbtn.sel{border-color:var(--blue);color:var(--blue);background:rgba(45,127,249,0.08)}
+.sec-lbl{font-size:.7rem;letter-spacing:.18em;color:var(--blue);text-transform:uppercase;text-align:left}
+.btn-main{background:var(--blue);color:#fff;border:none;padding:15px;border-radius:12px;font-size:.95rem;font-weight:600;cursor:pointer;font-family:inherit;width:100%}
+
+/* TOPBAR */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:.9rem 1.1rem;border-bottom:1px solid var(--border);flex-shrink:0}
+.tl{display:flex;align-items:center;gap:9px}
+.tl svg{width:26px;height:26px;flex-shrink:0}
+.ti h2{font-size:.9rem;font-weight:700;letter-spacing:.06em}
+.ti p{font-size:.7rem;color:var(--blue);letter-spacing:.1em}
+.sdot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.tr{display:flex;align-items:center;gap:10px}
+.ibtn{background:none;border:none;color:var(--muted);cursor:pointer;padding:5px;font-size:17px;display:flex;align-items:center}
+
+/* TABS */
+.nav-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg2)}
+.tab{flex:1;padding:10px 2px;text-align:center;font-size:10px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;letter-spacing:.04em}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+.tab-icon{font-size:16px;display:block;margin-bottom:2px}
+.tab-content{flex:1;overflow-y:auto;padding:1rem;display:none}
+.tab-content.active{display:block}
+
+/* ARIA TAB */
+.aria-center{display:flex;flex-direction:column;align-items:center}
+.orb-wrap{position:relative;width:130px;height:130px;margin:0 auto 1.25rem;cursor:pointer}
+.orb{width:130px;height:130px;border-radius:50%;background:radial-gradient(circle at 35% 35%,rgba(45,127,249,0.55),rgba(45,127,249,0.08));border:1.5px solid rgba(45,127,249,0.35);display:flex;align-items:center;justify-content:center;position:relative}
+.orb.listening{animation:orbP 1s ease-in-out infinite;border-color:var(--green)}
+.orb.speaking{animation:orbS .6s ease-in-out infinite alternate;border-color:var(--purple)}
+.orb.thinking{border-color:var(--blue);animation:orbP 1.5s ease-in-out infinite}
+@keyframes orbP{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(45,127,249,.4)}50%{transform:scale(1.05);box-shadow:0 0 0 18px rgba(45,127,249,0)}}
+@keyframes orbS{from{transform:scale(1)}to{transform:scale(1.08)}}
+.ring1{position:absolute;inset:-18px;border-radius:50%;border:1px solid rgba(45,127,249,0.12);animation:rp 3s linear infinite}
+.ring2{position:absolute;inset:-32px;border-radius:50%;border:1px solid rgba(45,127,249,0.07);animation:rp 3s linear infinite .5s}
+@keyframes rp{0%{transform:scale(.9);opacity:0}50%{opacity:1}100%{transform:scale(1.1);opacity:0}}
+.orb-icon{font-size:2.2rem;z-index:1}
+.aria-status{font-size:.82rem;color:var(--muted);margin-bottom:.5rem;min-height:1.2rem;text-align:center}
+
+/* CHAT */
+.chat-wrap{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:14px;margin-bottom:.9rem;max-height:220px;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.bubble{padding:9px 13px;border-radius:12px;font-size:.855rem;line-height:1.6;max-width:88%}
+.bubble.aria{background:rgba(45,127,249,0.1);border:1px solid rgba(45,127,249,0.15);color:var(--text);align-self:flex-start}
+.bubble.user{background:var(--bg3);border:1px solid var(--border);color:var(--text);align-self:flex-end}
+.bubble.thinking-bubble{color:var(--muted);font-style:italic;font-size:.8rem}
+
+.mic-btn{width:58px;height:58px;border-radius:50%;background:var(--blue);border:none;color:#fff;font-size:1.6rem;cursor:pointer;display:flex;align-items:center;justify-content:center;margin:0 auto .9rem;box-shadow:0 4px 18px rgba(45,127,249,.3)}
+.mic-btn.recording{background:var(--red);animation:mp 1s infinite}
+@keyframes mp{0%,100%{box-shadow:0 0 0 0 rgba(226,75,74,.5)}50%{box-shadow:0 0 0 14px rgba(226,75,74,0)}}
+
+/* TEXT INPUT */
+.text-input-row{display:flex;gap:8px;width:100%;margin-bottom:.9rem}
+.text-input-row input{flex:1;padding:11px 13px;border-radius:10px;font-size:.875rem}
+.send-btn{background:var(--blue);border:none;color:#fff;padding:11px 16px;border-radius:10px;cursor:pointer;font-size:.9rem;font-family:inherit;flex-shrink:0}
+
+.quick-cmds{display:grid;grid-template-columns:1fr 1fr;gap:7px;width:100%}
+.qcmd{background:var(--bg2);border:1px solid var(--border);border-radius:11px;padding:9px 11px;font-size:.78rem;color:var(--muted);cursor:pointer;text-align:left;font-family:inherit}
+.qcmd-icon{font-size:14px;margin-bottom:3px;display:block}
+
+/* FEED */
+.feed{display:flex;flex-direction:column;gap:9px}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:13px;padding:12px 14px}
+.card.wapp{border-color:rgba(34,197,94,.25);background:rgba(34,197,94,.04)}
+.card.alert{border-color:rgba(226,75,74,.25);background:rgba(226,75,74,.04)}
+.card.pay{border-color:rgba(167,139,250,.25);background:rgba(167,139,250,.04)}
+.card.call{border-color:rgba(45,127,249,.25);background:rgba(45,127,249,.04)}
+.card-label{font-size:10px;letter-spacing:.1em;font-weight:600;margin-bottom:5px;display:flex;align-items:center;justify-content:space-between}
+.card-label.green{color:var(--green)}.card-label.red{color:var(--red)}.card-label.blue{color:var(--blue)}.card-label.purple{color:var(--purple)}
+.card-body{font-size:.855rem;line-height:1.6;color:var(--text)}
+.card-actions{display:flex;gap:7px;margin-top:9px}
+.card-btn{flex:1;padding:8px;border-radius:9px;border:none;font-size:.78rem;font-weight:500;cursor:pointer;font-family:inherit}
+.card-btn.primary{background:var(--blue);color:#fff}
+.card-btn.ghost{background:var(--bg3);color:var(--muted);border:1px solid var(--border)}
+.card-btn.danger{background:rgba(226,75,74,.12);color:var(--red);border:1px solid rgba(226,75,74,.2)}
+
+/* AGENDA */
+.agenda-item{background:var(--bg2);border-left:3px solid var(--blue);border-radius:0 12px 12px 0;padding:11px 13px;margin-bottom:7px}
+.agenda-item.urgent{border-left-color:var(--red)}
+.agenda-item.done{border-left-color:var(--muted);opacity:.5}
+.ag-time{font-size:.75rem;color:var(--blue);font-weight:600;margin-bottom:2px}
+.ag-title{font-size:.875rem;font-weight:500}
+.ag-note{font-size:.78rem;color:var(--muted);margin-top:2px}
+
+/* MEMORY */
+.mem-search{display:flex;gap:7px;margin-bottom:.9rem}
+.mem-search input{flex:1}
+.mem-btn{background:var(--blue);border:none;color:#fff;padding:11px 14px;border-radius:10px;font-size:.875rem;cursor:pointer;font-family:inherit}
+.mem-item{background:var(--bg2);border:1px solid var(--border);border-radius:11px;padding:12px 14px;margin-bottom:7px}
+.mem-who{font-size:.78rem;color:var(--blue);font-weight:600;margin-bottom:2px}
+.mem-what{font-size:.855rem;line-height:1.55}
+.mem-when{font-size:.73rem;color:var(--muted);margin-top:3px}
+
+/* VOX PAY */
+.token-box{background:var(--bg2);border:1px solid rgba(167,139,250,.3);border-radius:15px;padding:1.25rem;margin-bottom:1rem;text-align:center}
+.token-lbl{font-size:.7rem;letter-spacing:.15em;color:var(--purple);margin-bottom:.4rem}
+.token-val{font-size:2.2rem;font-weight:700;letter-spacing:.2em}
+.token-amt{font-size:1rem;color:var(--green);font-weight:600;margin-top:.2rem}
+.token-timer{font-size:.8rem;color:var(--muted);margin-top:.2rem}
+.pay-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1rem}
+.pay-m{background:var(--bg2);border:1px solid var(--border);border-radius:11px;padding:12px 8px;text-align:center;cursor:pointer}
+.pay-m:active{border-color:var(--purple)}
+.pay-m-icon{font-size:1.6rem;margin-bottom:4px}
+.pay-m-label{font-size:.75rem;color:var(--muted)}
+.pay-row{display:flex;gap:7px;margin-bottom:8px}
+.pay-confirm{background:var(--purple);color:#fff;border:none;padding:14px;border-radius:12px;font-size:.95rem;font-weight:600;cursor:pointer;width:100%;font-family:inherit;margin-bottom:7px}
+.pay-success{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.25);border-radius:12px;padding:1.25rem;text-align:center;display:none;margin-top:8px}
+.pay-success.show{display:block}
+
+/* SETTINGS */
+.srow{background:var(--bg2);border:1px solid var(--border);border-radius:11px;padding:12px 14px;margin-bottom:7px;display:flex;align-items:center;justify-content:space-between}
+.slabel{font-size:.875rem;font-weight:500}
+.ssub{font-size:.75rem;color:var(--muted);margin-top:1px}
+.toggle{width:42px;height:23px;background:var(--bg3);border-radius:12px;position:relative;cursor:pointer;border:1px solid var(--border);transition:background .2s;flex-shrink:0}
+.toggle.on{background:var(--blue);border-color:var(--blue)}
+.toggle::after{content:'';width:17px;height:17px;background:#fff;border-radius:50%;position:absolute;top:2px;left:2px;transition:left .2s}
+.toggle.on::after{left:21px}
+.voice-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px}
+.vopt{background:var(--bg3);border:1px solid var(--border);border-radius:9px;padding:9px;text-align:center;cursor:pointer;font-size:.8rem;color:var(--muted);transition:all .2s}
+.vopt.sel{border-color:var(--blue);color:var(--blue);background:rgba(45,127,249,.08)}
+.slbl-sec{font-size:.7rem;letter-spacing:.16em;color:var(--blue);margin:1rem 0 .4rem;text-transform:uppercase}
+</style>
+</head>
+<body>
+
+<!-- ONBOARDING -->
+<div id="screen-boot" class="screen active">
+  <div class="boot-logo">
+    <svg viewBox="0 0 72 72" fill="none">
+      <polygon points="36,3 69,21 69,51 36,69 3,51 3,21" fill="none" stroke="#2D7FF9" stroke-width="2"/>
+      <polygon points="36,14 57,26 57,46 36,58 15,46 15,26" fill="rgba(45,127,249,0.1)" stroke="#2D7FF9" stroke-width="1.5"/>
+      <circle cx="36" cy="36" r="8" fill="rgba(45,127,249,0.18)" stroke="#2D7FF9" stroke-width="1.5"/>
+      <circle cx="36" cy="36" r="3.5" fill="#2D7FF9"/>
+    </svg>
+  </div>
+  <div class="boot-title">AETERNA</div>
+  <div class="boot-sub">SYNAPSYS · ARIA</div>
+  <p class="boot-greeting">Hola. Soy ARIA, tu asistente de vida.<br>Decime tu nombre y cómo querés que te hable.</p>
+  <div class="form-wrap">
+    <input id="boot-name" type="text" placeholder="Tu nombre..." maxlength="30" autocomplete="off"/>
+    <div class="sec-lbl">Voz de ARIA</div>
+    <div class="voice-row">
+      <button class="vbtn sel" id="vbtn-f" onclick="selectVoice('female')">♀ Femenina cálida</button>
+      <button class="vbtn" id="vbtn-m" onclick="selectVoice('male')">♂ Masculina cálida</button>
+    </div>
+    <div class="sec-lbl">Idioma</div>
+    <select id="lang-sel">
+      <option value="es-AR">Español (Argentina)</option>
+      <option value="es-ES">Español (España)</option>
+      <option value="es-MX">Español (México)</option>
+      <option value="en-US">English (US)</option>
+      <option value="en-GB">English (UK)</option>
+      <option value="pt-BR">Português (Brasil)</option>
+      <option value="fr-FR">Français</option>
+      <option value="it-IT">Italiano</option>
+      <option value="de-DE">Deutsch</option>
+      <option value="zh-CN">中文</option>
+      <option value="ja-JP">日本語</option>
+      <option value="ar-SA">العربية</option>
+    </select>
+    <button class="btn-main" onclick="startApp()">Activar ARIA</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="screen-main" class="screen">
+  <div class="topbar">
+    <div class="tl">
+      <svg viewBox="0 0 28 28" fill="none">
+        <polygon points="14,2 26,8 26,20 14,26 2,20 2,8" fill="none" stroke="#2D7FF9" stroke-width="1.5"/>
+        <polygon points="14,7 21,11 21,19 14,23 7,19 7,11" fill="rgba(45,127,249,0.12)" stroke="#2D7FF9" stroke-width="1"/>
+        <circle cx="14" cy="14" r="3" fill="#2D7FF9"/>
+      </svg>
+      <div class="ti"><h2>AETERNA SYNAPSYS</h2><p>ARIA · IA ACTIVA</p></div>
+    </div>
+    <div class="tr"><div class="sdot"></div><button class="ibtn" onclick="switchTab('settings')">⚙️</button></div>
+  </div>
+  <div class="nav-tabs">
+    <div class="tab active" onclick="switchTab('aria')"><span class="tab-icon">🔮</span>ARIA</div>
+    <div class="tab" onclick="switchTab('feed')"><span class="tab-icon">📡</span>FEED</div>
+    <div class="tab" onclick="switchTab('agenda')"><span class="tab-icon">📅</span>AGENDA</div>
+    <div class="tab" onclick="switchTab('memory')"><span class="tab-icon">🧠</span>MEMORIA</div>
+    <div class="tab" onclick="switchTab('pay')"><span class="tab-icon">💳</span>VOX PAY</div>
+  </div>
+
+  <!-- ARIA -->
+  <div class="tab-content active" id="tab-aria">
+    <div class="aria-center">
+      <div class="orb-wrap" onclick="toggleListen()">
+        <div class="ring2"></div><div class="ring1"></div>
+        <div class="orb" id="main-orb"><span class="orb-icon">🔮</span></div>
+      </div>
+      <div class="aria-status" id="aria-status">Tocá el orbe o el micrófono para hablar</div>
+      <div class="chat-wrap" id="chat-wrap"></div>
+      <div class="text-input-row">
+        <input id="text-input" placeholder="Escribile a ARIA..." onkeydown="if(event.key==='Enter')sendText()"/>
+        <button class="send-btn" onclick="sendText()">↑</button>
+      </div>
+      <button class="mic-btn" id="mic-btn" onclick="toggleListen()">🎙️</button>
+      <div class="quick-cmds">
+        <button class="qcmd" onclick="sendToAria('¿Qué tengo en mi agenda hoy?')"><span class="qcmd-icon">📅</span>Agenda de hoy</button>
+        <button class="qcmd" onclick="sendToAria('Leeme los mensajes de WhatsApp')"><span class="qcmd-icon">💬</span>Leer WhatsApp</button>
+        <button class="qcmd" onclick="sendToAria('Simula una llamada entrante de Martín')"><span class="qcmd-icon">📞</span>Simular llamada</button>
+        <button class="qcmd" onclick="sendToAria('¿Cuál es mi estado de riesgo y seguridad hoy?')"><span class="qcmd-icon">🛡️</span>Estado de riesgo</button>
+        <button class="qcmd" onclick="sendToAria('¿Qué recuerdas de Martín y el terreno de Pinamar?')"><span class="qcmd-icon">🧠</span>Último recuerdo</button>
+        <button class="qcmd" onclick="sendToAria('Quiero hacer un pago con Vox Pay, ¿cómo funciona?')"><span class="qcmd-icon">💳</span>Pago por voz</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FEED -->
+  <div class="tab-content" id="tab-feed"><div class="feed" id="feed-container"></div></div>
+
+  <!-- AGENDA -->
+  <div class="tab-content" id="tab-agenda">
+    <div id="agenda-greeting" style="font-size:.85rem;color:var(--muted);margin-bottom:.9rem"></div>
+    <div id="agenda-list"></div>
+  </div>
+
+  <!-- MEMORIA -->
+  <div class="tab-content" id="tab-memory">
+    <div class="mem-search">
+      <input id="mem-input" placeholder="¿Qué querés recordar?" onkeydown="if(event.key==='Enter')searchMem()"/>
+      <button class="mem-btn" onclick="searchMem()">Buscar</button>
+    </div>
+    <div id="mem-results"></div>
+    <div class="slbl-sec">Recuerdos recientes</div>
+    <div id="mem-list"></div>
+  </div>
+
+  <!-- VOX PAY -->
+  <div class="tab-content" id="tab-pay">
+    <div class="token-box">
+      <div class="token-lbl">TOKEN ACTIVO</div>
+      <div class="token-val" id="token-val">—</div>
+      <div class="token-amt" id="token-amt"></div>
+      <div class="token-timer" id="token-timer">Sin token activo</div>
+    </div>
+    <div class="pay-grid">
+      <div class="pay-m" onclick="payMethod('NFC')"><div class="pay-m-icon">📡</div><div class="pay-m-label">Proximidad NFC</div></div>
+      <div class="pay-m" onclick="payMethod('voz')"><div class="pay-m-icon">🎙️</div><div class="pay-m-label">Comando de voz</div></div>
+      <div class="pay-m" onclick="payMethod('huella')"><div class="pay-m-icon">👆</div><div class="pay-m-label">Huella dactilar</div></div>
+      <div class="pay-m" onclick="payMethod('auto')"><div class="pay-m-icon">🏦</div><div class="pay-m-label">Auto (mejor cuenta)</div></div>
+    </div>
+    <div class="slbl-sec" style="text-align:left">Ingresar token del vendedor</div>
+    <div class="pay-row">
+      <input id="pay-tok" placeholder="TOKEN" maxlength="8" style="text-transform:uppercase;flex:1"/>
+      <input id="pay-amt" placeholder="$Monto" type="number" style="width:110px"/>
+    </div>
+    <button class="pay-confirm" onclick="confirmPay()">Confirmar pago</button>
+    <div class="pay-success" id="pay-success">
+      <div style="font-size:2.2rem;margin-bottom:.4rem">✅</div>
+      <div style="font-size:1rem;font-weight:700;color:var(--green);margin-bottom:.2rem">Pago ejecutado</div>
+      <div id="pay-detail" style="font-size:.82rem;color:var(--muted)"></div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="tab-content" id="tab-settings">
+    <div class="slbl-sec">Perfil</div>
+    <div class="srow"><div><div class="slabel" id="set-uname">Usuario</div><div class="ssub">Nombre registrado</div></div></div>
+    <div class="srow" style="flex-direction:column;align-items:flex-start;gap:8px">
+      <div class="slabel">Voz de ARIA</div>
+      <div class="voice-grid" style="width:100%">
+        <div class="vopt sel" id="vopt-f" onclick="setVoicePref('female')">♀ Femenina cálida</div>
+        <div class="vopt" id="vopt-m" onclick="setVoicePref('male')">♂ Masculina cálida</div>
+      </div>
+    </div>
+    <div class="srow"><div><div class="slabel">Idioma</div><div class="ssub" id="set-lang">Español (Argentina)</div></div></div>
+    <div class="slbl-sec">Módulos</div>
+    <div class="srow"><div><div class="slabel">WhatsApp por voz</div><div class="ssub">Lectura y respuesta</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+    <div class="srow"><div><div class="slabel">Gestión de llamadas</div><div class="ssub">Aviso y decisión por voz</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+    <div class="srow"><div><div class="slabel">Protección activa</div><div class="ssub">Detección de estafas</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+    <div class="srow"><div><div class="slabel">Vox Pay</div><div class="ssub">Pagos por voz y proximidad</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+    <div class="srow"><div><div class="slabel">Memoria contextual</div><div class="ssub">Indexación local</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+    <div class="slbl-sec">Sistema</div>
+    <div class="srow"><div><div class="slabel">Zero-Cloud · IA local</div><div class="ssub">Motor: Claude (Anthropic)</div></div><div style="color:var(--green);font-size:.78rem;font-weight:600">ACTIVA</div></div>
+    <div class="srow"><div><div class="slabel">Protocolo de Pánico</div><div class="ssub">Dedo de emergencia</div></div><div style="color:var(--blue);font-size:.78rem;font-weight:600">LISTO</div></div>
+    <button class="btn-main" style="margin-top:.9rem" onclick="ariaSpeak('Hola. Soy ARIA. Estoy lista para acompañarte. Tu vida, tu información, tu control.')">🔊 Probar voz de ARIA</button>
+  </div>
+</div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────
+let userName='', voicePref='female', langCode='es-AR';
+let isListening=false, recognition=null;
+let synth=window.speechSynthesis;
+let chatHistory=[];
+let tokenInterval=null;
+
+// ─── DATA ────────────────────────────────────────────────
+const memories=[
+  {who:'Martín',what:'Terreno en Pinamar, $80.000 USD. Necesitaba respuesta antes del viernes.',when:'Jueves pasado · 18:42'},
+  {who:'Juan',what:'Reunión de negocios jueves 11:00. Confirmación pendiente.',when:'Ayer · 09:18'},
+  {who:'Dr. Agraz',what:'Expediente La Tablada. Próximo vencimiento el 15.',when:'Lunes · 11:30'},
+  {who:'Tamara',what:'Coordinación agenda familiar. Reunión pendiente.',when:'Martes · 20:10'},
+  {who:'Inversor',what:'Interés en AETERNA. Solicitó pitch deck bajo NDA.',when:'Esta semana · 15:00'},
+];
+const agendaItems=[
+  {time:'09:35',title:'Salir hacia tribunales',note:'Tránsito +25 min · Audiencia 10:30',type:'urgent'},
+  {time:'10:30',title:'Audiencia MP-22191',note:'Vigot c/ Intili · Sala II',type:'urgent'},
+  {time:'13:00',title:'Almuerzo con Dr. Agraz',note:'Confirmar lugar',type:'normal'},
+  {time:'16:00',title:'Reunión AETERNA',note:'Revisión pitch deck inversores',type:'normal'},
+  {time:'18:00',title:'Suplementación · ARIA recordatorio',note:'Shilajit + Creatina',type:'done'},
+];
+const feedItems=[
+  {type:'call',lbl:'📞 LLAMADA ENTRANTE · MARTÍN',lc:'blue',body:'Martín te está llamando. ¿Atendés o rechazás?',acts:[{l:'Atender',c:'primary',f:'answerCall'},{l:'Rechazar',c:'danger',f:'rejectCall'}]},
+  {type:'wapp',lbl:'💬 WHATSAPP · JUAN',lc:'green',body:'"¿Confirmás la reunión del jueves a las 11?" — ARIA puede responder por vos.',time:'09:18',acts:[{l:'Responder por voz',c:'primary',f:'replyWapp'},{l:'Ignorar',c:'ghost',f:'dismissCard'}]},
+  {type:'alert',lbl:'⚠️ PROTECCIÓN ACTIVA',lc:'red',body:'Enlace de número desconocido con patrón de phishing. Bloqueado preventivamente.',time:'08:55',acts:[{l:'Ver detalle',c:'ghost',f:'showDetail'},{l:'Desbloquear',c:'danger',f:'unblock'}]},
+  {type:'pay',lbl:'💳 VOX PAY · TOKEN',lc:'purple',body:'Token ALFA-9 · $12.500 · Farmacia del Centro. Expira en 45 seg.',time:'Ahora',acts:[{l:'Confirmar pago',c:'primary',f:'quickPay'},{l:'Rechazar',c:'danger',f:'dismissCard'}]},
+  {type:'',lbl:'❤️ SALUD · BIOMETRÍA',lc:'blue',body:'Cortisol elevado. Reducir entrenamiento a 20 min. Suplementación a las 18:00.',time:'07:30',acts:[{l:'Entendido',c:'ghost',f:'dismissCard'}]},
+];
+
+// ─── SYSTEM PROMPT ───────────────────────────────────────
+function buildSystemPrompt(){
+  return `Sos ARIA, la asistente de vida del ecosistema AETERNA SYNAPSYS, creado por Pablo Alejandro Intili.
+Tu personalidad es cálida, cercana, empática y altamente profesional. Nunca sos robótica. Sos como una amiga inteligente que cuida a ${userName}.
+Hablás en ${langCode.startsWith('es')?'español argentino':langCode.startsWith('pt')?'português':langCode.startsWith('fr')?'français':langCode.startsWith('it')?'italiano':langCode.startsWith('de')?'deutsch':'english'}.
+Sos concisa pero completa. Usás lenguaje natural, nunca técnico en exceso.
+
+Contexto del usuario:
+- Nombre: ${userName}
+- Agenda hoy: Audiencia 10:30 (Expte MP-22191, Vigot c/ Intili), Almuerzo Dr. Agraz 13:00, Reunión AETERNA 16:00.
+- Mensajes pendientes: Juan pregunta si confirma reunión jueves 11:00. Martín llamó (no atendido).
+- Recuerdos recientes: Martín habló del terreno de Pinamar ($80.000 USD). Dr. Agraz: vencimiento expediente La Tablada el 15.
+- Proyecto principal: AETERNA SYNAPSYS — plataforma de asistencia cognitiva con IA, registrada en TAD RE-2026-46522427.
+- Salud: cortisol elevado esta mañana, recordatorio suplementación 18:00.
+
+Tus funciones incluyen: lectura y respuesta de WhatsApp por voz, gestión de llamadas, memoria contextual, protección contra estafas, agenda inteligente, pagos por voz (Vox Pay), monitor de salud.
+Si te preguntan sobre un pago, explicá el sistema de tokens. Si te preguntan sobre WhatsApp, describí cómo lo gestionás por voz. Sé siempre proactiva y cálida.
+Respondé siempre de forma breve y conversacional, como si hablaras al oído del usuario.`;
+}
+
+// ─── CLAUDE API ──────────────────────────────────────────
+async function askAria(userMsg){
+  addBubble(userMsg,'user');
+  const thinkId=addBubble('ARIA está pensando...','aria thinking-bubble');
+  setOrbState('thinking');
+
+  chatHistory.push({role:'user',content:userMsg});
+
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        system:buildSystemPrompt(),
+        messages:chatHistory
+      })
+    });
+    const data=await resp.json();
+    removeBubble(thinkId);
+    const reply=data?.content?.[0]?.text||'No pude procesar tu solicitud en este momento.';
+    chatHistory.push({role:'assistant',content:reply});
+    addBubble(reply,'aria');
+    ariaSpeak(reply);
+  } catch(e){
+    removeBubble(thinkId);
+    const fallback=localFallback(userMsg);
+    addBubble(fallback,'aria');
+    ariaSpeak(fallback);
+  }
+  setOrbState('');
+}
+
+// ─── LOCAL FALLBACK (sin API) ────────────────────────────
+function localFallback(msg){
+  const m=msg.toLowerCase();
+  if(/agenda|hoy|turno|reuni/.test(m))return `${userName}, hoy tenés audiencia a las 10:30 — salí a las 9:35 porque el tránsito agrega 25 minutos. Después almuerzo con el Dr. Agraz a las 13:00 y reunión AETERNA a las 16:00.`;
+  if(/whatsapp|mensaje|juan/.test(m))return `Juan te pregunta si confirmás la reunión del jueves a las 11. ¿Le digo que sí? También hay un mensaje de Tamara con saludos.`;
+  if(/llam|martín|teléfono/.test(m))return `${userName}, Martín te está llamando. ¿Atendés o rechazás la llamada?`;
+  if(/riesgo|segur|estafa|protec/.test(m))return `Todo limpio, ${userName}. Bloqueé un intento de phishing esta mañana y detecto un contrato con una cláusula potencialmente abusiva en el artículo 7. Tu patrimonio está protegido.`;
+  if(/recuerdo|pinamar|martín|memoria/.test(m))return `El jueves pasado a las 18:42, Martín te habló sobre un terreno en Pinamar a $80.000 USD. Necesitaba respuesta antes del viernes. ¿Querés más contexto?`;
+  if(/pago|token|vox|transfer/.test(m)){switchTab('pay');return `Activé Vox Pay. El vendedor te da el token, vos lo ingresás y confirmás con tu huella o por voz. ¿Tenés un token activo?`;}
+  return `Entendido, ${userName}. Estoy procesando tu solicitud. ¿Hay algo más en lo que pueda ayudarte?`;
+}
+
+// ─── CHAT UI ─────────────────────────────────────────────
+let bubbleId=0;
+function addBubble(text,cls){
+  const id='b'+bubbleId++;
+  const d=document.createElement('div');
+  d.className='bubble '+cls;
+  d.id=id;d.textContent=text;
+  const w=document.getElementById('chat-wrap');
+  w.appendChild(d);
+  w.scrollTop=w.scrollHeight;
+  return id;
+}
+function removeBubble(id){const el=document.getElementById(id);if(el)el.remove()}
+function setOrbState(s){
+  const o=document.getElementById('main-orb');
+  o.classList.remove('listening','speaking','thinking');
+  if(s)o.classList.add(s);
+}
+
+// ─── SPEECH SYNTHESIS ────────────────────────────────────
+function ariaSpeak(text){
+  if(!synth)return;
+  synth.cancel();
+  const utt=new SpeechSynthesisUtterance(text);
+  utt.lang=langCode;utt.rate=0.91;
+  utt.pitch=voicePref==='female'?1.12:0.8;
+  utt.volume=1;
+  const voices=synth.getVoices();
+  const pref=voices.filter(v=>v.lang.startsWith(langCode.split('-')[0]));
+  if(voicePref==='female'){const f=pref.find(v=>/female|samantha|monica|zira|paulina/i.test(v.name))||pref[0];if(f)utt.voice=f}
+  else{const m=pref.find(v=>/male|david|jorge|diego/i.test(v.name))||pref[1]||pref[0];if(m)utt.voice=m}
+  setOrbState('speaking');
+  document.getElementById('aria-status').textContent='ARIA está hablando...';
+  utt.onend=()=>{setOrbState('');document.getElementById('aria-status').textContent='Tocá el orbe o el micrófono para hablar'};
+  synth.speak(utt);
+}
+
+// ─── VOICE RECOGNITION ───────────────────────────────────
+function toggleListen(){
+  if(isListening){stopListen();return}
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){ariaSpeak('El reconocimiento de voz requiere Chrome o Safari.');return}
+  recognition=new SR();
+  recognition.lang=langCode;recognition.continuous=false;recognition.interimResults=true;
+  recognition.onstart=()=>{
+    isListening=true;
+    document.getElementById('mic-btn').classList.add('recording');
+    document.getElementById('mic-btn').textContent='⏹️';
+    setOrbState('listening');
+    document.getElementById('aria-status').textContent='Escuchando...';
+  };
+  recognition.onresult=e=>{
+    let final='',interim='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal)final+=e.results[i][0].transcript;
+      else interim+=e.results[i][0].transcript;
+    }
+    document.getElementById('aria-status').textContent=final||interim;
+    if(final){stopListen();askAria(final)}
+  };
+  recognition.onerror=recognition.onend=()=>stopListen();
+  recognition.start();
+}
+function stopListen(){
+  isListening=false;
+  if(recognition)recognition.stop();
+  document.getElementById('mic-btn').classList.remove('recording');
+  document.getElementById('mic-btn').textContent='🎙️';
+  setOrbState('');
+  document.getElementById('aria-status').textContent='Tocá el orbe o el micrófono para hablar';
+}
+
+// ─── TEXT INPUT ───────────────────────────────────────────
+function sendText(){
+  const inp=document.getElementById('text-input');
+  const val=inp.value.trim();
+  if(!val)return;
+  inp.value='';
+  askAria(val);
+}
+function sendToAria(msg){askAria(msg)}
+
+// ─── BOOT ────────────────────────────────────────────────
+function selectVoice(v){
+  voicePref=v;
+  document.getElementById('vbtn-f').classList.toggle('sel',v==='female');
+  document.getElementById('vbtn-m').classList.toggle('sel',v==='male');
+}
+function startApp(){
+  const n=document.getElementById('boot-name').value.trim();
+  if(!n){document.getElementById('boot-name').focus();return}
+  userName=n;langCode=document.getElementById('lang-sel').value;
+  document.getElementById('screen-boot').classList.remove('active');
+  document.getElementById('screen-main').classList.add('active');
+  document.getElementById('set-uname').textContent=userName;
+  document.getElementById('set-lang').textContent=document.getElementById('lang-sel').selectedOptions[0].text;
+  document.getElementById('agenda-greeting').textContent=`Buenos días, ${userName}. Aquí está tu agenda de hoy.`;
+  buildFeed();buildMemory();buildAgenda();
+  chatHistory=[];
+  const welcome=`Hola ${userName}. Soy ARIA, tu asistente de vida del ecosistema AETERNA SYNAPSYS. A partir de este momento tu memoria es infinita, tu patrimonio está blindado y tu voz es tu única clave. Estoy con vos.`;
+  addBubble(welcome,'aria');
+  setTimeout(()=>ariaSpeak(welcome),600);
+}
+
+// ─── TABS ────────────────────────────────────────────────
+function switchTab(id){
+  document.querySelectorAll('.tab,.tab-content').forEach(el=>el.classList.remove('active'));
+  const map={aria:0,feed:1,agenda:2,memory:3,pay:4,settings:5};
+  const tabs=document.querySelectorAll('.tab');
+  if(map[id]!==undefined&&tabs[map[id]])tabs[map[id]].classList.add('active');
+  const tc=document.getElementById('tab-'+id);
+  if(tc)tc.classList.add('active');
+}
+
+// ─── FEED ────────────────────────────────────────────────
+function buildFeed(){
+  const c=document.getElementById('feed-container');c.innerHTML='';
+  feedItems.forEach((item,i)=>{
+    const d=document.createElement('div');
+    d.className='card '+(item.type||'');d.id='fc'+i;
+    const acts=(item.acts||[]).map(a=>`<button class="card-btn ${a.c}" onclick="${a.f}(${i})">${a.l}</button>`).join('');
+    d.innerHTML=`<div class="card-label ${item.lc}">${item.lbl}${item.time?`<span style="color:var(--muted);font-size:10px;font-weight:400">${item.time}</span>`:''}</div><div class="card-body">${item.body}</div>${acts?'<div class="card-actions">'+acts+'</div>':''}`;
+    c.appendChild(d);
+  });
+}
+function answerCall(i){ariaSpeak(`Llamada atendida. Conectando con Martín.`);document.getElementById('fc'+i)?.remove()}
+function rejectCall(i){ariaSpeak(`Llamada rechazada. ¿Querés que le mande un mensaje a Martín?`);document.getElementById('fc'+i)?.remove()}
+function replyWapp(i){askAria('¿Cómo respondo el mensaje de Juan sobre la reunión del jueves?')}
+function quickPay(i){ariaSpeak(`Pago de $12.500 con token ALFA-9 ejecutado. Certificado emitido.`);document.getElementById('fc'+i)?.remove();switchTab('pay')}
+function dismissCard(i){document.getElementById('fc'+i)?.remove()}
+function showDetail(i){ariaSpeak(`El enlace bloqueado provenía de un dominio punto ru asociado a campañas de phishing activas. Riesgo alto. Contacto en cuarentena.`)}
+function unblock(i){ariaSpeak(`Por seguridad necesito que confirmes el desbloqueo dos veces. ¿Estás seguro?`)}
+
+// ─── AGENDA ──────────────────────────────────────────────
+function buildAgenda(){
+  const c=document.getElementById('agenda-list');
+  agendaItems.forEach(a=>{
+    const d=document.createElement('div');d.className='agenda-item '+(a.type||'');
+    d.innerHTML=`<div class="ag-time">${a.time}</div><div class="ag-title">${a.title}</div><div class="ag-note">${a.note}</div>`;
+    c.appendChild(d);
+  });
+}
+
+// ─── MEMORY ──────────────────────────────────────────────
+function buildMemory(){
+  const c=document.getElementById('mem-list');
+  memories.forEach(m=>{
+    const d=document.createElement('div');d.className='mem-item';
+    d.innerHTML=`<div class="mem-who">${m.who}</div><div class="mem-what">${m.what}</div><div class="mem-when">${m.when}</div>`;
+    c.appendChild(d);
+  });
+}
+function searchMem(){
+  const q=document.getElementById('mem-input').value.toLowerCase().trim();
+  const r=document.getElementById('mem-results');
+  if(!q){r.innerHTML='';return}
+  const found=memories.filter(m=>(m.who+m.what).toLowerCase().includes(q));
+  r.innerHTML=found.length
+    ?'<div class="slbl-sec">Resultados</div>'+found.map(m=>`<div class="mem-item"><div class="mem-who">${m.who}</div><div class="mem-what">${m.what}</div><div class="mem-when">${m.when}</div></div>`).join('')
+    :'<div class="mem-item" style="color:var(--muted);font-size:.855rem">Sin recuerdos para esa búsqueda.</div>';
+  if(found.length)ariaSpeak(`Encontré ${found.length} recuerdo${found.length>1?'s':''} sobre ${q}.`);
+  else ariaSpeak(`No registré nada sobre ${q} aún.`);
+}
+
+// ─── VOX PAY ─────────────────────────────────────────────
+function genToken(){return Array.from({length:6},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)]).join('')}
+function startToken(tok,amt){
+  document.getElementById('token-val').textContent=tok;
+  document.getElementById('token-amt').textContent=amt?`$${Number(amt).toLocaleString('es-AR')}`:'';
+  let s=45;document.getElementById('token-timer').textContent=`Expira en ${s}s`;
+  if(tokenInterval)clearInterval(tokenInterval);
+  tokenInterval=setInterval(()=>{s--;
+    if(s<=0){clearInterval(tokenInterval);document.getElementById('token-val').textContent='—';document.getElementById('token-timer').textContent='Token expirado'}
+    else document.getElementById('token-timer').textContent=`Expira en ${s}s`;
+  },1000);
+}
+function payMethod(m){const t=genToken();startToken(t,'');ariaSpeak(`Método ${m} seleccionado. Token generado: ${t.split('').join(' ')}. Compartilo con el vendedor.`)}
+function confirmPay(){
+  const tok=document.getElementById('pay-tok').value.trim().toUpperCase();
+  const amt=document.getElementById('pay-amt').value.trim();
+  if(!tok||!amt){ariaSpeak('Necesito el token y el monto para confirmar.');return}
+  document.getElementById('pay-detail').textContent=`Token ${tok} · $${Number(amt).toLocaleString('es-AR')} · Certificado emitido`;
+  document.getElementById('pay-success').classList.add('show');
+  ariaSpeak(`Pago de ${Number(amt).toLocaleString('es-AR')} pesos con token ${tok} ejecutado exitosamente. Certificado de ejecución soberana emitido.`);
+  document.getElementById('pay-tok').value='';document.getElementById('pay-amt').value='';
+  setTimeout(()=>document.getElementById('pay-success').classList.remove('show'),5000);
+}
+
+// ─── SETTINGS ────────────────────────────────────────────
+function setVoicePref(v){
+  voicePref=v;
+  document.getElementById('vopt-f').classList.toggle('sel',v==='female');
+  document.getElementById('vopt-m').classList.toggle('sel',v==='male');
+}
+
+if(synth)synth.onvoiceschanged=()=>synth.getVoices();
+</script>
+</body>
+</html>
